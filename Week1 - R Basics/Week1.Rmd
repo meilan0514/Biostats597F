@@ -1,0 +1,15 @@
+---
+title: Biostats 597F
+subtitle: Week 1 - R Basics
+output: ioslides_presentation
+---
+
+
+## Coding Style
+
+It is important to have a good R coding style so that your code can be easily shared to others
+
+- [Hadley Wickham's Style Guide](http://adv-r.had.co.nz/Style.html)
+- [Google's R Style Guide](https://google.github.io/styleguide/Rguide.xml)
+
+They are similar to each other, so adhring to either one should be good enough
