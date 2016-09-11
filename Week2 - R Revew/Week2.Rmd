@@ -1,0 +1,244 @@
+---
+title: Biostats 597F
+subtitle: Week 1 - R Review
+output: ioslides_presentation
+---
+
+## R Objects
+
+Everything in R is object. Each object has the following properties
+
+- **length**: object length ```length(rnorm(10))```
+- **class**: object class ```class(rnorm(100))```, used to determine appropriate function to call
+- **mode**: type of storage mode of an object, mode(1:5), typeof(1:5)
+- **storage mode**: similar to mode, often used to distinguish double and integer
+- **attributes**: additional attributes of an object. e.g. matrix is a vector with additional attributes
+
+## Vector
+
+- Vector is fundamental data type in R
+- Vectors have modes such as: numeric, character, logical, complex
+```
+mode(1:5)
+mode(c("a", "b"))
+mode(c(TRUE, FALSE))
+mode(c(1 + 3i, 2 + 4i))
+```
+- Elements of a vector must have same mode, otherwise they will be converted to same mode automatically
+```
+c(1, "b")
+c(1, FALSE)
+c(1, 1 + 1i)
+c(1 + 2i, "aaa")
+c(TRUE, "aa")
+```
+
+## Storage mode of numeric vector
+
+Numerics may be stored as raw, integer and double
+```
+x <- 1:5
+y <- c(1, 2, 3, 4, 5)
+identical(x, y)
+typeof(x)
+typeof(y)
+```
+
+Usually, no worries about different storage modes for numerics. R handles them well. However, we can use it to reduce storage of data, useful for Gene data
+
+```
+x <- sample(c(1, 2, 3, 4), 1000000, replace = TRUE); object.size(x)
+storage.mode(x) <- "integer"; object.size(x)
+storage.mode(x) <- "raw"; object.size(x)
+```
+
+## Recycling
+
+When operating on two vectors with different length, the shorter one will be recycled
+
+`c(1, 2, 3) + 2` is equivalent to `c(1, 2, 3) + c(2, 2, 2)`
+
+`c(1, 2, 3, 4) + c(4, 6, 8)` is equivalent to `c(1, 2, 3, 4) + c(4, 6, 8, 4)`
+
+Add a column to each column of a matrix
+
+```
+x <- matrix(1:9, nrow = 3)
+x + c(3, 4, 5)
+```
+
+## Vector Indexing
+
+- Index with a vector of indices, indcies can be duplicated to select elements repeatedly
+```
+x <- rnorm(10)
+x[c(1, 4, 5)]
+x[c(1, 1, 5, 5)]
+```
+
+- Negative indicies can be used to remove elements
+```
+x[-length(x)] # remove last element
+```
+
+- Index with a vector of logical vector with same length
+```
+x <- 1:4
+x[c(TRUE, FALSE, TRUE, FALSE)]
+x[c(TRUE, FALSE)] # use recycling
+```
+
+## Replacement and ifelse
+
+```
+x <- 1:10
+x[x < 5] <- 5
+```
+
+ifelse is very useful to create a new vector based on two vectors. For example imputing values.
+
+```
+x <- rnorm(10)
+ifelse(x < 0, 0, x)
+y <- c(NA, 2, 3, 1, NA)
+ifelse(is.na(y), 2, y)
+```
+
+```
+gender <- c("M", "F", "F", "M")
+age <- c(23, 34, 22, 14)
+ifelse(gender == "F", age + 5, age + 10)
+```
+
+## Create useful vectors
+
+- `seq()` function to generate a sequence
+```
+seq(from = 1, to = 10, by = 2)
+seq(from = 0, to = 100, length.out = 21)
+```
+
+- `seq(x)` is safer than using `1:length(x)`
+```
+x <- numeric()
+for (i in seq(x)) print(i)
+for (i in 1:length(x)) print(i)
+```
+
+- `rep()` function to generate a repeated vector
+```
+rep(1:3, each = 2)
+rep(1:3, times = 2)
+```
+
+## any() and all()
+
+Two useful functions to do quality check for a vector
+
+```
+any(is.na(x))  # does x contains missing value
+all(x %in% c("M", "F")) # does x only contain M and F
+all(age >= 0 & age <= 120) # make sure age within a range
+```
+
+What is the difference between **&** vs **&&** and **|** vs **||**?
+
+- & and | performs elementwise comparison and return a vector of comparison
+- && and || only performs comparison on the first element and returns single value
+```
+c(FALSE, TRUE) & c(TRUE, TRUE)
+c(FALSE, TRUE) && c(F, TRUE)
+```
+
+## NA, NULL
+
+- **NA** refers to not available or missing
+```
+x <- c(1, NA)
+is.na(x) # NOTE: x == NA will not work
+length(x)
+mean(c(1, 2, 3, NA), na.rm = TRUE)
+```
+- **NULL** refers nonexistence with no mode. Useful in functions when we want to return nothing
+```
+z <- NULL
+is.null(z)
+length(z)
+c(z, 8)
+x <- c(1, NA)
+y <- if (any(is.na(x))) NULL else mean(x)
+mean(c(1:4, y))
+```
+
+## Coercion
+
+- **is.xxx** to check object type
+```
+is.numeric(x)
+is.character(x)
+is.factor(x)
+is.data.frame(mtcars)
+sapply(mtcars, is.numeric)
+```
+- **as.xxx** to convert to different object type
+```
+as.character(1:5)
+as.factor(c("A", "b"))
+as.numeric("2", "4", "5")
+as.Date("2015-9-9")
+```
+
+## Character functions
+
+- **paste** function to concatenate vectors, collpase option to convert the vector to a single string
+```
+paste("x", 1:10) # recycling
+paste0("x", 1:10) # same as paste("x", 1:10, sep = "")
+paste0("x", 1:10, collapse = " + ")
+# Create a model formula
+paste("Species", "~", paste0(names(iris)[-5], collapse = " + "))
+```
+
+- **sprintf** function contruct strings with placeholder, concise than paste in some cases
+```
+sprintf("%s have %s candies", 
+        c("Tom", "John", "I"),
+        c(10, 4, 13))
+```
+
+## Character functions
+
+- **toupper** to convert strings to upper case
+- **tolower** to convert strings to lower case
+- **nchar** to count how many characters in each string
+- **substring** and **substr** to get a part of a string
+- **strsplit** to split a string
+
+## Named vector
+
+Named vector can be very useful as dictionary
+```
+x <- 1:3
+names(x) <- c("One", "Two", "Three")
+attributes(x)
+```
+
+```
+states <- c("MA" = "Massachusetts", "NY" = "New York", CA = "California")
+x <- c("MA", "NY", "CA", "CA", "NY", "MA")
+states[x]
+```
+
+```
+library(ggplot2)
+map <- c("setosa" = "steelblue", "versicolor" = "black",
+          "virginica" = "purple")
+ggplot(iris, aes(Petal.Length, Sepal.Length, 
+       group = Species, color = Species)) +
+       geom_line() +
+       scale_color_manual(values = map)
+
+```
+
+## Matrices
+
