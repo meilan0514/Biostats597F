@@ -300,7 +300,69 @@ ggplot(iris, aes(Petal.Length, Sepal.Length,
        scale_color_manual(values = map)
 </pre>
 
-</article></slide><slide class=''><hgroup><h2>Matrices</h2></hgroup><article  id="matrices"></article></slide>
+</article></slide><slide class=''><hgroup><h2>Matrices</h2></hgroup><article  id="matrices">
+
+<ul>
+<li>Matrices are vectors with two additional attributes</li>
+<li><strong>matrix()</strong> is used to create a matrix from a vector</li>
+<li>By default the matrix is filled by column</li>
+</ul>
+
+<pre >m &lt;- matrix(1:12, nrow = 4)
+class(m)
+mode(m)
+length(m)
+attributes(m)
+dim(m)
+nrow(m)
+ncol(m)
+matrix(1:12, nrow = 4, byrow = TRUE)</pre>
+
+</article></slide><slide class=''><hgroup><h2>Matrix arithmetics</h2></hgroup><article  id="matrix-arithmetics">
+
+<ul>
+<li><p>Matrix can be applied operators like a vector</p>
+
+<pre >m + 4
+m * 4
+m + c(1, 2, 3) # recycling</pre></li>
+<li><p>Linear algebra</p>
+
+<pre >t(m)
+x &lt;- matrix(rnorm(12), nrow = 4)
+y &lt;- matrix(rnorm(12), nrow = 3)
+x %*% y # matrix multiplication</pre></li>
+<li><p>Compute Xbeta</p>
+
+<pre >X &lt;- model.matrix(~disp + hp, data = mtcars)
+beta &lt;- c(1, .5, .6)
+X %*% beta</pre></li>
+</ul>
+
+</article></slide><slide class=''><hgroup><h2>Matrix indexing</h2></hgroup><article  id="matrix-indexing">
+
+<pre >m &lt;- matrix(1:12, nrow = 3)
+m[1:3, 1:2]
+m[, c(TRUE, TRUE, FALSE, FALSE)]
+m[2, ]  # dimension reduced
+m[, 1]  # dimension reduced
+diag(m)</pre>
+
+<p>to avoid unitended dimension reduction, use drop = FALSE</p>
+
+<pre >m[2, , drop = FALSE]</pre>
+
+<p>we can also reshapc the matrix</p>
+
+<pre >dim(m) &lt;- c(6, 2)</pre>
+
+</article></slide><slide class=''><hgroup><h2>rowSums(), colSums(), colMeans(), rowMeans()</h2></hgroup><article  id="rowsums-colsums-colmeans-rowmeans">
+
+<p>This four functions can compute matrix row/col level sum/mean extreme fast</p>
+
+<pre >x &lt;- matrix(rnorm(1e8), nrow = 1e3)
+system.time(apply(x, 1, sum))
+system.time(rowSums(x))</pre></article></slide>
 
 
   <slide class="backdrop"></slide>
