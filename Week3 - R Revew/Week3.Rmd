@@ -1,0 +1,243 @@
+---
+title: Biostats 597F
+subtitle: Week 1 - R Review
+output: ioslides_presentation
+---
+
+## Matrices
+
+- Matrices are vectors with two additional attributes
+- **matrix()** is used to create a matrix from a vector
+- By default the matrix is filled by column
+- Matracies are essential part of statistical models
+
+```
+m <- matrix(1:12, nrow = 4)
+class(m)
+mode(m)
+length(m)
+attributes(m)
+dim(m)
+nrow(m)
+ncol(m)
+matrix(1:12, nrow = 4, byrow = TRUE)
+```
+
+## Matrix arithmetics
+
+- Matrix can be applied operators with a vector like a vector
+```
+m + 4
+m * 4
+m + c(1, 2, 3) # recycling
+```
+
+- While applying operators in two matrices, they must have same dimension
+```
+x <- matrix(1:4, nrow = 2)
+y <- matrix(1:8, nrow = 4)
+x + y ## will have error
+```
+
+## Matrix arithmetics
+
+- Linear algebra
+```
+t(m)   # transpose a matrix
+x <- matrix(rnorm(12), nrow = 4)
+y <- matrix(rnorm(12), nrow = 3)
+x %*% y # matrix multiplication
+```
+
+Excersise - How to determine if a matrix is symmetric for not? 
+
+Or is $X_{ij} = X_{ji}$ for all i, j?
+
+## Matrix arithmetics
+
+- Matrix multiplication `X %*% Y`
+Compute Xbeta
+```
+X <- model.matrix(~disp + hp, data = mtcars)
+beta <- c(1, .5, .6)
+X %*% beta
+```
+
+- Inverse a Matrix: solve(X)
+
+Example - Solve a linear regression problem: $\beta=(X^TX)^{-1}X^Ty$
+
+Assume we want to fit a model mpg ~ cyl + carb * gear in mtcars
+```
+X <- model.matrix(mpg ~ cyl + carb * gear, data = mtcars) # Get X
+y <- mtcars$mpg # Get y
+beta <- solve(t(X) %*% X)%*%t(X)%*%y # compute beta
+fit <- lm(mpg ~ cyl + carb * gear, data = mtcars) # are they same?
+```
+
+## Covariance Matrix
+
+Next we want to do hypothesis testing, so we need to know variance-covariance matrix of $\beta$
+
+$\Sigma=\frac{(y-X\beta)^{T}(y-X\beta)}{N-p}(X^TX)^{-1}$
+
+```
+sigma <- t(y - X%*%beta)%*%(y - X%*%beta)/(nrow(X) - ncol(X))
+sigma <- as.numeric(sigma) * solve(t(X) %*% X)
+variances <- diag(sigma)
+stds <- sqrt(variances)
+tvalues <- as.vector(beta) / stds
+```
+
+are they same as ```summary(fit)```
+
+## Combining matrices
+
+-  Combining vertically using **rbind()**
+
+```
+x <- matrix(1:4, nrow = 2)
+y <- matrix(9:18, ncol = 2)
+rbind(x, y)
+```
+
+- Combining horizontally using **cbind()**
+```
+x <- matrix(1:4, nrow = 2)
+y <- matrix(9:18, nrow = 2)
+cbind(x, y)
+```
+
+## Matrix indexing
+
+Similar to vector but in two dimensions
+```
+m <- matrix(1:12, nrow = 3)
+m[1:3, 1:2]
+m[-2, -1]
+m[, c(TRUE, TRUE, FALSE, FALSE)]
+m[2, ]  # dimension reduced
+m[, 1]  # dimension reduced
+diag(m)
+```
+
+to avoid unitended dimension reduction, use drop = FALSE
+
+```
+m[2, , drop = FALSE]
+```
+
+we can also reshape the matrix
+
+```
+dim(m) <- c(6, 2)
+```
+
+## rowSums(), colSums(), colMeans(), rowMeans()
+
+This four functions can compute matrix row/col level sum/mean extreme fast
+
+```
+x <- matrix(rnorm(1e8), nrow = 1e3)
+system.time(apply(x, 1, sum))
+system.time(rowSums(x))
+```
+
+## Lists
+
+- List is also a vector with mode of **list**
+- List structure is recursive, we can create a list of list of list...
+- List is a very flexible data structure and is  building block of many complex R objects such as model objects
+- List component can be any R object, such as vector, matrix, data frame or function
+
+```
+mylist <- list(1:5, mtcars, rnorm)
+mylist[[3]](10)
+
+class(mylist)
+typeof(mylist)
+```
+
+## Create a list
+
+Use **list()** function to create a list
+
+```
+j <- list(name = "Joe", salary = 55000, union = T)
+```
+
+Use **c()** to conbine lists similar to combining vector
+```
+k <- list(name = "Tom", salary = 60000, union = F)
+employees <- c(j, k)  # Not desired
+employees <- c(list(j), list(k))
+employees <- list(j, k)
+```
+
+Create list from emplty list, useful in loops
+
+```
+employees <- list()
+employees[["emp1"]] <- j
+employees[["emp2"]] <- k
+```
+
+## Access List elements
+
+-  Access part of the list using **[]**
+
+```
+j[c("name", "salary")]
+j[1:2]
+j[1]
+```
+
+- Access component using **[[]]** or **$**
+
+```
+j[["name"]]
+j$union
+j[[2]]
+j[[1:2]]  # Not working
+j[[c("name", "salary")]] # Not working
+```
+
+- **[[]]** vs **[]**: **[]** is used to get a sublist we can providd a vector. **[[]]** is used to access a particular component, we should provide a single name or single index.
+
+## Add/Remove elements
+
+We can do it similar to vector since list is just a vector
+
+```
+j <- c(j, state = "MA")
+j$city <- "Amherst"
+j[["state"]] <- NULL
+j <- j[-(which(names(j) == "city"))]
+```
+
+Size of list ```length(j)```
+
+Names of list ```names(j)```
+
+Collpase a list
+```
+x <- list(a = 1:5, b = 10:20)
+unlist(x)
+```
+
+## Model object as a list
+
+```
+fit <- lm(mpg ~ cyl + carb * gear, data = mtcars)
+attributes(fit) # it's a list with class attributes "lm"
+class(fit)
+typeof(fit)  # it's list, so list operators can be used
+length(fit)
+names(fit)
+fit$coefficients # get model coefficients
+fit$call # get model call
+fit$fitted.values # get fitted values
+class(fit) <- "list"  # convert to list object
+```
+
+
