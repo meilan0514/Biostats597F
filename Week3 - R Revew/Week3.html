@@ -300,7 +300,68 @@ names(fit)
 fit$coefficients # get model coefficients
 fit$call # get model call
 fit$fitted.values # get fitted values
-class(fit) &lt;- &quot;list&quot;  # convert to list object</pre></article></slide>
+class(fit) &lt;- &quot;list&quot;  # convert to list object</pre>
+
+</article></slide><slide class=''><hgroup><h2>Data frame</h2></hgroup><article  id="data-frame">
+
+<ul>
+<li>Data frame is most used object for data analysis and modeling</li>
+<li><p>It looks like matrix, but these 2 are fundamentally different</p>
+
+<pre >class(mtcars)
+mode(mtcars)
+attributes(mtcars)</pre>
+
+<ul>
+<li>Matrix is a vetor, while data frame is a list</li>
+<li>All elements in matrix must have same mode, while data frame only need to have same mode for each column</li>
+</ul></li>
+<li>A data frame is a special list with each component with same length</li>
+<li><p>Similar to SQL data and SAS data</p></li>
+</ul>
+
+</article></slide><slide class=''><hgroup><h2>Create data frame</h2></hgroup><article  id="create-data-frame">
+
+<ul>
+<li><p><strong>data.frame()</strong> function</p>
+
+<pre >data.frame(x = 1:10, 
+       y = letters[1:10])</pre></li>
+<li><p>Read from external file (csv, txt, excel, etc)</p></li>
+<li><p>When creating data frame, we should almost alway set <strong>stringsAsfactors = FALSE</strong>. Factor variables often gives trouble.</p>
+
+<pre >data.frame(x = 1:10, 
+       y = letters[1:10], stringsAsFactors = FALSE)</pre></li>
+</ul>
+
+</article></slide><slide class=''><hgroup><h2>Access data frame</h2></hgroup><article  id="access-data-frame">
+
+<p>We can use list operators to access data frame columns</p>
+
+<pre >mtcars[[&quot;cyl&quot;]]
+mtcars$cyl
+mtcars[1:3]
+mtcars[c(&quot;mpg&quot;, &quot;disp&quot;)]</pre>
+
+</article></slide><slide class=''><hgroup><h2>Matrix like operators</h2></hgroup><article  id="matrix-like-operators">
+
+<p>We can extract elements by row and column as for matrix</p>
+
+<pre >mtcars[1:5, 1:4]
+mtcars[1:5, c(&quot;hp&quot;, &quot;cyl&quot;)]
+mtcars[mtcars$cyl == 6, ]</pre>
+
+</article></slide><slide class=''><hgroup><h2>Common data frame operations</h2></hgroup><article  id="common-data-frame-operations">
+
+<ul>
+<li>mutate</li>
+<li>arrange</li>
+<li>select</li>
+<li>group wise operations/aggregations</li>
+<li>data merge</li>
+</ul>
+
+<p>All those can be easily achieved by <strong>dplyr</strong> package. This worths a couple of lecturs to discuss.</p></article></slide>
 
 
   <slide class="backdrop"></slide>
