@@ -229,7 +229,109 @@ cut(x, breaks = c(-Inf, q4, Inf),
 
 <pre >library(ggplot2)
 cut_number(x, 4)  # equal number
-cut_interval(x, 4) # equal distance</pre></article></slide>
+cut_interval(x, 4) # equal distance</pre>
+
+</article></slide><slide class=''><hgroup><h2>Apply functions family</h2></hgroup><article  id="apply-functions-family">
+
+<p>Apply functions can replace your loops and make your code concise</p>
+
+<p>Commonly used apply functions</p>
+
+<ul>
+<li><strong>apply</strong>: Apply Functions Over Array Margins</li>
+<li><strong>sapply</strong> and <strong>lapply</strong>: Apply a Function over a List or Vector</li>
+<li><strong>tapply</strong>: Apply a Function Over a Ragged Array</li>
+</ul>
+
+<p>Less commonly used apply functions:</p>
+
+<ul>
+<li><strong>by</strong>: Apply a Function to a Data Frame Split by Factors</li>
+<li><strong>eapply</strong>: Apply a Function Over Values in an Environment</li>
+<li><strong>mapply</strong>: Apply a Function to Multiple List or Vector Arguments</li>
+<li><strong>rapply</strong>: Recursively Apply a Function to a List</li>
+</ul>
+
+</article></slide><slide class=''><hgroup><h2>apply function</h2></hgroup><article  id="apply-function">
+
+<pre >apply(X, MARGIN, FUN, ...)</pre>
+
+<p>Returns a vector or array or list of values obtained by applying a function to margins of an array or matrix. MARGIN 1 is by row, 2 is by column</p>
+
+<pre >m &lt;- matrix(1:12, nrow = 3)
+apply(m, 1, sum)
+apply(m, 2, max)  # max of each column</pre>
+
+<p>Function may return vector length longer than 1, or even anything</p>
+
+<pre >m &lt;- matrix(1:10, nrow = 5)
+apply(m, 1, function(x) x[x &gt; 3])</pre>
+
+</article></slide><slide class=''><hgroup><h2>sapply and lapply functions</h2></hgroup><article  id="sapply-and-lapply-functions">
+
+<p>lapply returns a list of the same length as X, each element of which is the result of applying FUN to the corresponding element of X.</p>
+
+<p>sapply is a user-friendly version and wrapper of lapply by default returning a vector, matrix</p>
+
+<p>for example:</p>
+
+<ul>
+<li><p>If returned list containing elements with length 1, then sapply will simplify to single list</p>
+
+<pre >lapply(1:5, function(x) x)
+sapply(1:5, function(x) x)</pre></li>
+</ul>
+
+</article></slide><slide class=''><hgroup><h2>sapply and lapply functions</h2></hgroup><article  id="sapply-and-lapply-functions-1">
+
+<ul>
+<li><p>If returned list containing vectors with same length, sapply will simplify to matrix</p>
+
+<pre >lapply(1:5, function(x) rep(x, 5))
+sapply(1:5, function(x) rep(x, 5))</pre></li>
+</ul>
+
+<p>data frame is a list, so lapply/sapply can be used to apply functions to each column</p>
+
+<pre >sapply(mtcars, class)
+sapply(mtcars, is.character)
+
+# mean for numeric variables
+sapply(mtcars[, sapply(mtcars, is.numeric)], mean)</pre>
+
+</article></slide><slide class=''><hgroup><h2>sapply and lapply functions</h2></hgroup><article  id="sapply-and-lapply-functions-2">
+
+<p>Can also be used to simulation, which equivalent to for loop</p>
+
+<p>Example: power of t-test, assume delta = 0.1, N = 100</p>
+
+<pre >test &lt;- function(x) t.test(rnorm(100, 0.1))$p.value &lt; 0.05
+reject &lt;- sapply(1:10000, test)
+mean(reject)</pre>
+
+</article></slide><slide class=''><hgroup><h2>do.call() to collect a list of results</h2></hgroup><article  id="do.call-to-collect-a-list-of-results">
+
+<p>We often want to combine a list of results returned from lapply</p>
+
+<p>Example: combine a list of data frame</p>
+
+<pre >files &lt;- c(&quot;mtcars1.csv&quot;, &quot;mtcars2.csv&quot;, &quot;mtcars3.csv&quot;)
+data &lt;- lapply(files, function(x) read.csv(x, stringsAsFactors = F))
+data_combined &lt;- do.call(&quot;rbind&quot;, data)</pre>
+
+</article></slide><slide class=''><hgroup><h2>tapply function</h2></hgroup><article  id="tapply-function">
+
+<p>Apply a function to each cell of a ragged array, that is to each (non-empty) group of values given by a unique combination of the levels of certain factors.</p>
+
+<pre >tapply(X, INDEX, FUN, ..., simplify = TRUE)</pre>
+
+<pre >ages &lt;- c(25,26,55,37,21,42)
+affils &lt;- c(&quot;R&quot;,&quot;D&quot;,&quot;D&quot;,&quot;R&quot;,&quot;U&quot;,&quot;D&quot;)
+tapply(ages,affils,mean)</pre>
+
+<p>Excersise -</p>
+
+<p>in mtcars data, find the average mpg for each number of cyl</p></article></slide>
 
 
   <slide class="backdrop"></slide>

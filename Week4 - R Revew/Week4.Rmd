@@ -155,4 +155,114 @@ cut_number(x, 4)  # equal number
 cut_interval(x, 4) # equal distance
 ```
 
+## Apply functions family
 
+Apply functions can replace your loops and make your code concise
+
+Commonly used apply functions
+
+- **apply**: Apply Functions Over Array Margins
+- **sapply** and **lapply**: Apply a Function over a List or Vector
+- **tapply**: Apply a Function Over a Ragged Array
+
+Less commonly used apply functions:
+
+- **by**: Apply a Function to a Data Frame Split by Factors
+- **eapply**: Apply a Function Over Values in an Environment
+- **mapply**: Apply a Function to Multiple List or Vector Arguments
+- **rapply**: Recursively Apply a Function to a List
+
+## apply function
+
+```
+apply(X, MARGIN, FUN, ...)
+```
+
+Returns a vector or array or list of values obtained by applying a function to margins of an array or matrix. MARGIN 1 is by row, 2 is by column
+
+```
+m <- matrix(1:12, nrow = 3)
+apply(m, 1, sum)
+apply(m, 2, max)  # max of each column
+```
+
+Function may return vector length longer than 1, or even anything
+
+```
+m <- matrix(1:10, nrow = 5)
+apply(m, 1, function(x) x[x > 3])
+```
+
+## sapply and lapply functions
+
+lapply returns a list of the same length as X, each element of which is the result of applying FUN to the corresponding element of X. 
+
+sapply is a user-friendly version and wrapper of lapply by default returning a vector, matrix
+
+for example:
+
+- If returned list containing elements with length 1, then sapply will simplify to single list
+```
+lapply(1:5, function(x) x)
+sapply(1:5, function(x) x)
+```
+
+## sapply and lapply functions
+
+- If returned list containing vectors with same length, sapply will simplify to matrix
+```
+lapply(1:5, function(x) rep(x, 5))
+sapply(1:5, function(x) rep(x, 5))
+```
+
+data frame is a list, so lapply/sapply can be used to apply functions to each column
+
+```
+sapply(mtcars, class)
+sapply(mtcars, is.character)
+
+# mean for numeric variables
+sapply(mtcars[, sapply(mtcars, is.numeric)], mean)
+```
+
+## sapply and lapply functions
+
+Can also be used to simulation, which equivalent to for loop
+
+Example: power of t-test, assume delta = 0.1, N = 100
+
+```
+test <- function(x) t.test(rnorm(100, 0.1))$p.value < 0.05
+reject <- sapply(1:10000, test)
+mean(reject)
+```
+
+## do.call() to collect a list of results
+
+We often want to combine a list of results returned from lapply
+
+Example: combine a list of data frame
+
+```
+files <- c("mtcars1.csv", "mtcars2.csv", "mtcars3.csv")
+data <- lapply(files, function(x) read.csv(x, stringsAsFactors = F))
+data_combined <- do.call("rbind", data)
+```
+
+## tapply function
+
+Apply a function to each cell of a ragged array, that is to each (non-empty) group of values given by a unique combination of the levels of certain factors.
+
+```
+tapply(X, INDEX, FUN, ..., simplify = TRUE)
+```
+
+```
+ages <- c(25,26,55,37,21,42)
+affils <- c("R","D","D","R","U","D")
+tapply(ages,affils,mean)
+```
+
+Excersise -
+
+in mtcars data, find the average mpg for each number of cyl
