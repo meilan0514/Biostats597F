@@ -1,0 +1,241 @@
+---
+title: Biostats 597F
+subtitle: Week 5
+output: ioslides_presentation
+---
+
+## Control Structure
+
+```
+if (condtition) {
+    ...
+} else if (condition) {
+    ...
+} else {
+    ...
+}
+```
+
+Example:
+
+```
+x <- 5
+if (x < 0) {
+  print("x < 0")
+} else if (x == 0) {
+  print("x is 0")
+} else {
+  print("x > 0")
+}
+```
+
+## switch Function
+
+More readable alternative when choosing from a few choices
+
+```
+x <- rnorm(1:100)
+stat <- "median"
+switch(stat,
+       "mean" = mean(x),
+       "median" = median(x),
+       "max" = max(x))
+```
+
+## Loops
+
+Many loops in R are replaced by vectorized functions, such as mean(x), diff(x)
+
+For loop
+
+```
+for (variable in sequence) {
+     ...
+}
+```
+
+Example - 
+
+```
+for (variable in names(iris)) {
+  type <- class(iris[[variable]])
+  print(sprintf("%s is a %s variable", variable, type))
+}
+```
+
+## Function
+
+- Every operation in R is a function call
+- Function definition
+```
+fname <-  function(arg1, arg2, etc.) {
+  function body
+}
+```
+- Function component
+    * body: code inside function. `body(lm)`
+    * formals: arguments for user to call function. `formals(lm)`, `args(lm)`, `str(lm)`
+    * envrionment: map of location of function variables. `environment(lm)`
+
+## Arguments
+
+- We can specifiy argument with or without formal argument name
+```
+lm(mpg~am + gear, mtcars)
+lm(formula = mpg~am, data = mtcars)
+```
+
+- Specify default argument using ```variable = value``` in argument of function definition
+```
+f <- function(x, y = 5) {
+  print(sprintf("x is %s", x))
+  print(sprintf("y is %s", y))
+}
+f(6)
+f(x = 1, y = 2)
+```
+
+## Arguments 
+
+- If argument is missing, no error reported unless it it used
+```
+f <- function(x, y) {
+  print("Hello")
+}
+f()
+f(1)
+```
+
+```
+g <- function(x, y) {
+  print("Hello")
+  print(y)
+}
+g()
+g(1)
+g(y = 1)
+g(1, 2)
+```
+
+## Calling conventions for functions
+
+Specified values and arguments in function call are matched in the following way
+
+1. Any arguments specified like `name = value` are matched for corresponding formal arguments
+2. Arguments specified like `name = value` with unique partial match with formal argumetns are matched if the formal argument is ***NOT AFTER ...***, e.g. coef = 5, 5 may be matched to argumetn coefficient
+3. Any unnamed arguments are matched to remaining formal arguments one by one in sequence
+4. All remaining unmatched actual argumetns become part of ***...***
+5. Having unmatched formal argument is not an error
+
+## Example
+
+```
+f <- function(stat, biostat, student) {
+  print(sprintf("stat is %s", stat))
+  print(sprintf("biostat is %s", biostat))
+  print(sprintf("student is %s", student))
+}
+```
+
+Will the following produce error? Or what is the output?
+
+```
+f(1, 2, 3)
+f(biostat = 1, 2, 3)
+f(student = 1, 2, 3)
+f(1, student = 2, 3)
+f(bio = 1, 2, 3)
+f(st = 1, 2, 3)
+f(stat = 1, st = 2, 3)
+```
+
+## Special argument ...
+
+- ... is special in that any number of arguments may be matched to it
+- ... is used extensively by generic functions in R. ***c***, ***plot***, ***lm***
+- ... is often used to pass on as an argument to other functions
+
+```
+f <- function(...) {
+  args <- list(...)
+  print(args)
+}
+f(3, 4, 5)
+```
+
+Function to summ any number of user provided numbers
+
+```
+add <- function(...) sum(unlist(list(...)))
+add(1, 2, 3)
+add(1, 2, 4, 5, 6)
+```
+
+## Special argument ...
+
+We can pass on arguments of other functions without explicity write them out
+
+Example - write a function to make residual plot for linear regression output, user can change plot parameters, such as plot range, color, etc
+
+```
+myplot <- function(fit, ...) {
+  plot(fit$fitted.values, fit$residuals, ...)
+}
+
+fit <- lm(lm(mpg ~ wt + hp, data = mtcars))
+myplot(fit)
+myplot(fit, col = "red")
+myplot(fit, pch = 3, col = "blue")
+```
+
+## Example - t test function
+
+Two sample t test
+
+- test statistics
+
+$$
+T = \frac{\bar{y}_1-\bar{y}_2}{\sqrt{s^2(1/n_1 + 1/n_2)}}
+$$
+where 
+$$
+s_2 = \frac{(n_1 - 1)s_1^2 + (n_2 - 1)s_2^2}{n_1 + n_2 - 2}
+$$
+
+User input
+- y1, y2: two vectors to perform test
+- test: two-sided, or lower one sided, or upper one sided
+- alpha: type 1 error
+
+## Example - t test
+
+```
+ttest <- function(y1, y2, test = "two-sided", alpha = 0.05) {
+  n1 <- length(y1)
+  n2 <- length(y2)
+  ndf <- n1 + n2 - 2
+  s2 <- ((n1 - 1) * var(y1) + (n2 - 1) * var(y2)) / ndf
+  tstat <- (mean(y1) - mean(y2)) / sqrt(s2 * (1/n1 + 1/n2)) 
+  tail.area <- switch(test,
+    "two-sided" = 2 * (1 - pt(abs(tstat), ndf)),
+    "lower" = pt(tstat, ndf),
+    "upper" = 1 - pt(tstat, ndf)
+  )
+  list(tstat = tstat,
+       df = ndf,
+       p.value = tail.area,
+      rejet = tail.area < alpha)
+}
+```
+
+## Example - t test
+
+```
+y1 <- rnorm(100)
+y2 <- rnorm(100, .5)
+ttest(y1, y2)
+ttest(y1, y2, "lower")
+```
+
+
+
