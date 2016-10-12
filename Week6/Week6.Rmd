@@ -1,0 +1,209 @@
+---
+title: Biostats 597F
+subtitle: Week 6
+output: ioslides_presentation
+---
+
+## Object Oriented Programming
+
+What happens when we type a name in the console?
+
+```{r, results='hide'}
+x <- 1:10
+x
+
+fit <- lm(mpg~gear + cyl, data = mtcars)
+fit
+
+```
+
+- It will run **print** function on the object
+- According the class of the object, the print function will be different. (try to modify the class of the fit to be **list** to see what happens)
+- Example in predictive modeling, **predict** function works for different models such as random forest, linear model, logistic model.
+
+## Object Oriented Programming
+
+Everything in R is object. 
+
+- R promotes encapsulation
+- R classes are polymorphic. Same call to different objects may trigger different actions depending on the class of the object
+- R allows inheritance to extend class. One example is generalized linear model object inherits linear model object and extends on that
+- Two types of classes are available in R S3 and S4
+- S3 is simple and flexible but not rigrous, most R objects are S3 class. S4 is more rigrous 
+```{r, results='hide'}
+isS4(fit)
+isS4(1:5)
+```
+
+## Create S3 Class
+
+- No need to define an S3 class, just assign the class to the class attributes to the object (usually a list)
+- Although there are expectations on the data structure for a class, R does not do any check.
+
+We can look at ```lm``` function to see how assign class to an object
+```
+print(lm)
+```
+
+Example of our own class
+
+```
+x <- list(name = "John", salary = 5000)
+class(x) <- "employee"
+```
+
+## Create S3 Class
+
+We can add/remove/modify componets from an S3 class, R will not complain until we call a function using the affected element
+
+```{r, results="hide", eval=FALSE}
+fit <- lm(mpg ~ cyl + gear + wt, data = mtcars)
+names(fit) # what componnents in the object
+fit$who <- "Xiangdong" # add one element
+fit$call <- "nothing"  # type fit to see the change
+fit$fitted.values <- NULL # remove one element
+summary(fit) # still work
+print(fit) # still work
+fit$rank <- NULL # are summary, print still working?
+```
+
+When we train a model and save the output, we can append addtional components to the model object such as version number. You can not do this for S4 class.
+
+## Polymorphic - Generic function
+
+Polymorphic - When a generic function, such as print, summary, is called on an object, the actual function call is different for different classes of object.
+
+Here is how it works as an example for print(fit), fit has class **fit**
+
+- Search for function **print.lm**
+- If it is available then call **print.lm(fit)**
+- Otherwise call **print.default(fit)**
+
+To see the definition of print.lm
+```
+stats:::print.lm
+```
+
+We add stats::: because the function is in stats package and not exported
+
+## Generic function
+
+- Generic function is the function that will dispatch different functions to different classes
+- List all generic functions for a class
+```
+methods(class = "lm")
+```
+- List all available methods for a generic function
+```
+methods("print")
+```
+- How generic function is defined
+```
+print(print)
+```
+There is only one line code. **UseMethod** is the dispatch function to find the appropriate function to call.
+
+## Example
+
+We can create our own student class
+
+generate data
+```{r, results='hide', eval=FALSE}
+me <- list(first = "xiangdong",
+           last = "gu",
+           age = 30,
+           department = "biostat",
+           degree = "phd")
+```
+
+specify class
+```{r, results='hide', eval=FALSE}
+class(me) <- "student"
+```
+
+## Example
+define method
+
+```{r, results='hide', eval=FALSE}
+print.student <- function(x) {
+  s <- sprintf("%s %s, %s years old, is a %s in %s department",
+               x$first, x$last, x$age, x$degree, x$department)
+  cat(s)
+}
+```
+
+```{r, results='hide', eval=FALSE}
+summary.student <- function(x) {
+  s <- ifelse(x$age > 28, "old", "young")
+  cat(sprintf("%s %s is %s", x$first, x$last, s))
+}
+```
+
+We can implement as many as possible methods for this class as long as the generic function is already defined.
+
+## User-defined generic function
+
+We can define our own generic function, similar to **print**
+
+```{r, results='hide', eval=FALSE}
+getage <- function(x, ...) UseMethod("getage", x)
+getage.student <- function(x) x$age
+getage(me)
+```
+
+This is more useful if we have multiple classes we want to have **getage** method.
+
+```{r, results='hide', eval=FALSE}
+j <- list(name = "Joe", empage = 45)
+class(j) <- "employee"
+getage.employee <- function(x) x$empage
+getage(j)
+```
+
+With class and methods, we get a unified interface of calling functions.
+
+## Inheritance
+
+If an object class A extends from another object class B, we can reuse what has been implemented in class B.
+
+Example - A new class **phdstudent** for phd student inheriting from **student**
+
+```{r, results='hide', eval=FALSE}
+x <- list(first = "xiangdong",
+          last = "gu",
+          age = 30,
+          department = "biostat",
+          degree = "phd",
+          advisor = "raji")
+class(x) <- c("phdstudent", "student")
+print.phdstudent <- function(x) {
+  cat(sprintf("advisor is %s", x$advisor))
+}
+x
+summary(x)
+```
+
+## Inheritance
+
+Basically, it first searches for **print.phdstudent** funcition, if not found, then search for **print.student** function.
+
+## Double dispatch
+
+We can define methods for operators such as "+"
+
+Example: use + to add number of rows of data frames
+```{r, results="hide", eval=FALSE}
+`+.data.frame` <- function(e1, e2) {
+  nrow(e1) + nrow(e2)
+}
+mtcars + iris
+```
+
+This is used ggplot2 package, the class of ggplot is **gg**
+
+```
+library(ggplot2)
+methods(class = "gg")
+ggplot2:::`+.gg`
+```
+
