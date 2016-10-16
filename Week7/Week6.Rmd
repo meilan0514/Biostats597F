@@ -1,0 +1,226 @@
+---
+title: Biostats 597F
+subtitle: Week 6 - Input and Output
+output: ioslides_presentation
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(results="hide", eval=FALSE)
+```
+
+## Text file - readLines
+
+- **readLines** read text file into a list, each component is text string of a line in the text
+- It is usually used for unstructured text files when read.table can not be used
+
+Example - Twitter text file
+
+```{r}
+umass <- readLines("umass_tt.txt", encoding = "UTF-8")
+length(umass)
+umass[[1]]
+# percent of tweets are retweets
+rt <- sapply(umass, function(x) grepl("^RT ", x))
+mean(rt)
+```
+
+## Text file - readLines
+Example - Remove some lines then read, e.g. SAS output
+
+```{r}
+f1 <- readLines("f1.txt")
+# find and remove lines with ----
+sep_lines <- sapply(f1, function(x) grepl("^----", x))
+f1 <- f1[!sep_lines]
+data <- read.table(text = paste(f1, collapse = "\n"), header = TRUE)
+```
+
+## Text file - read.table and read.csv
+
+- Both read delimited text files to a data frame
+- read.csv is a same as read.table with different default options such as comma separated file (csv) and with header row etc
+
+Commonly used read options
+
+- **header**: whether or not the file contains header row (variable names)
+- **sep**: the delimiter usually "\\t", ",", " ", "|" etc
+- **na.strings**: character value to be treated as missing
+- **colClasses**: column classes
+- **stringsAsFactors**: discussed before, should make it FALSE
+- **text**: if read from a string instead of file
+
+## Text file - read.table and read.csv
+
+- read the data with different delimiter
+
+```{r}
+data_text <- "
+Name|Age
+Tom|45
+John|23
+"
+data <- read.table(sep = "|", header = TRUE, stringsAsFactors = FALSE,
+                   text = data_text)
+str(data)
+```
+
+## Text file - read.table and read.csv
+
+- specify different missing strings. In SAS, missing is represented by .
+
+```{r}
+data_text <- "
+Name|Age
+Tom|45
+John|.
+"
+data <- read.table(sep = "|", header = TRUE, stringsAsFactors = FALSE,
+                   text = data_text, na.strings = ".")
+str(data)
+```
+
+## Text file - read.table and read.csv
+
+- Specify variable type to read. By defualt, R automatically determine the variable type. 
+- Choose from logical, integer, numeric, complex, character, raw, factor, Date, POSIXct
+- Can input as a vector (will be recycled) or a named vector 
+```{r}
+data_text <- "
+Name|BTHDATE|ZIP
+Tom|1980-02-03|01003
+John|1998-02-02|02446
+"
+data <- read.table(sep = "|", header = TRUE, stringsAsFactors = FALSE,
+                   text = data_text,
+                   colClasses = c("BTHDATE" = "Date",
+                                  "ZIP" = "character"))
+str(data)
+```
+
+## Text file - read.table and read.csv
+
+- Even if a field contains a single non-numeric and non-empty character, the whole variable will be read as character
+- After reading, we usually need to check if all variables are read and parsed correctly
+
+```{r}
+mtcars_large <- lapply(1:1000, function(x) mtcars)
+mtcars_large <- do.call("rbind", mtcars_large)
+write.csv(mtcars_large, file = "mtcars.csv", row.names = FALSE)
+# modify any single value in the file and read
+data <- read.csv("mtcars.csv", stringsAsFactors = FALSE)
+```
+
+## Large text file (less than momory)
+
+- When file is large, but still loadable into memory, usually 100M - a few G, use **data.table** or **readr** for fast read
+
+```{r}
+CO2 <- CO2[rep(1:nrow(CO2), 30000), ]
+write.csv(CO2, file = "CO2.csv", row.names = FALSE)
+system.time(data <- read.csv("CO2.csv"))
+
+library(data.table)
+system.time(data <- fread("CO2.csv"))
+
+library(readr)
+system.time(data <- read_csv("CO2.csv"))
+```
+
+For more details of how to use those two functions in different sitations, google them.
+
+## data.table and readr
+
+- Both are much faster than read.csv, and data.table is usually faster than readr (usually less than 2 times faster)
+- readr is developed by Hadley so it may better work with dply package, also developed by Hadley. We usually care less about the small loading speed gain by data.table
+- fread automatically determine delimiter, but this is not useful in most cases
+- Personally, I use readr and I have better experience using readr
+- They determine variable type by looking at first n records
+
+## Large text file not fitted to memory
+
+We can use Apache Spark to process very large files. Spark has wrappter for R. 
+
+http://spark.apache.org/ for apache spark including sparkR
+
+http://spark.rstudio.com/ developed by RStudio to work with Spark in Rstudio
+
+## Text file - JSON format
+
+- JSON file format is very popular for web data
+- Most results from Web API call are in JSON format
+- **jsonlite** package is very handy to load JSON format data
+- JSON is very similar to list
+
+```{r}
+library(httr)
+library(jsonlite)
+url <- "https://itunes.apple.com/search?term=taylor+swift&entity=musicVideo"
+res <- content(GET(url))
+# parse json data to R list
+res <- fromJSON(res)
+View(res[[2]])
+```
+
+jsonline automatically parse to data frame if the list can be converted to data frame
+
+## Read text file from web
+
+R can read data in web like a file
+
+```{r}
+data_link <- "http://archive.ics.uci.edu/ml/machine-learning-databases
+/statlog/german/german.data"
+data_link <- gsub("[[:space:]\n]", "", data_link)
+data <- read.csv(data_link, header = FALSE, sep = " ",
+                 stringsAsFactors = F)
+```
+
+## Output - writeLines, write.table, write.csv
+
+- Reverse operation of readLines, read.table, read.csv
+
+```{r}
+writeLines(c("Line1", "Line 2", "Last line"), "test.txt")
+write.csv(mtcars, "mt.csv", row.names = FALSE)
+```
+
+- Read document for different options such as na, quote etc
+
+## Output - .rda file
+
+- We can save any R object into a .rda and the load into R
+- It works in the way to recover the work space
+- It is usually to save model object together with functions and data to do pre-processing
+
+```{r}
+breaks <- c(0, 15, 25, Inf)
+transform <- function(data) base::within(data, {mpg_c = cut(mpg, breaks)})
+fit <- lm(cyl~mpg_c, data = transform(mtcars[-(1:5), ]))
+save(fit, breaks, transform, file = "model.rda")
+```
+
+To predict on new data
+```{r}
+load("model.rda")
+predict(fit, transform(mtcars[1:5, ]))
+```
+
+## Output - RDS file
+
+R object can also be save as RDS file, and can be restored to a different name
+
+```{r}
+fit <- lm(cyl~mpg, data = mtcars)
+saveRDS(fit, file = "model.rds")
+```
+
+```{r}
+## readRDS to restore the object and assign to a name
+fit_object <- readRDS("model.rds")
+```
+
+## rda/RData vs rds
+
+- rda can contain multiple R objects and when loaded they are restored as what was saved (same object names). rds can only contain one R object, and can be restored and assigned to a different object name.
+- We can use list to save multiple objects and then save as rds
+

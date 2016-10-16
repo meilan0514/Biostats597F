@@ -1,0 +1,5 @@
+Name|Age
+John|30
+Tom|45
+Nicole|46
+bb|N
