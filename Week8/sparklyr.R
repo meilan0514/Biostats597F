@@ -14,15 +14,16 @@ sc <- spark_connect(master = "local",
                     config = config)
 
 # Load thedata-------------------------------------------------------
-health <- spark_read_csv(sc, "health", 
-                         "/Users/xgu/Downloads/Activity recognition exp/Phones_accelerometer.csv")
+health <- spark_read_csv(sc, "health",
+                         "/Users/xgu/Downloads/Activity recognition exp/*.csv",
+                         memory = FALSE)
 
 # Do analysis--------------------------------------------------------
 # first a few records
 health
 
 # sample some data and load into R
-health %>% sample_n(100) %>% collect
+#health %>% sample_n(100) %>% collect
 
 # how many records
 count(health)

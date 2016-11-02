@@ -1,0 +1,187 @@
+---
+title: Biostats 597F
+subtitle: Week 9 - Efficient R Programming
+output: ioslides_presentation
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(results="hide", eval=FALSE)
+```
+
+## Efficient R Prgramming
+
+- R can be very slow if not used properly
+- Should avoid R programming pitfalls leading to poor performance
+- Vectorize as much as possible. Many problems can be vectorized enven it does not like so
+- Understand memory usage by R helps to understand why code is slow
+- Use Rcpp package to rewrite the step that takes most of the computation time if it can save time significantly
+
+## Performance Measurement
+
+**System.time** funcion can be used to measure how long a piece of code run.
+
+```{r}
+system.time(y <- rnorm(1000000))
+```
+
+When the running is too small, this function is less precise. Instead we can use **microbenchmark** to get a more precise measurement.
+
+```{r}
+install.packages("microbenchmark")
+library(microbenchmark)
+
+microbenchmark(
+  rnorm(1000),
+  rnorm(10000)
+)
+```
+
+## Vector Assignment
+
+- Most R objects are **immutable**. That is, if we modify a vector the whole vector will be changed and a new vector is created. This may have huge performance impact.
+
+```{r}
+x1 <- rnorm(1e4)
+x2 <- rnorm(1e6)
+x3 <- rnorm(1e7)
+microbenchmark(
+  x1[1] <- 0,
+  x2[1] <- 0,
+  x3[1] <- 0
+)
+```
+- The reason it takes much longer for a long vector is R will create a copy of the vector, then make the change, and then assign x to the new vectork.
+
+## Vector Assignment
+
+Now we understand why we should not do assigning values one by one
+
+```{r}
+x <- rnorm(10000)
+addone1 <- function(x) {
+  for (i in 1:length(x)) x[i] <- x[i] + 1
+  x
+}
+addone2 <- function(x) x + 1
+microbenchmark(
+  addone1(x),
+  addone2(x)
+)
+```
+
+**addone2**, the vectorized version, does not result numerous copy of the vector.
+
+## Copy-on-change
+
+```{r}
+z <- runif(10)
+y <- z
+tracemem(z)
+tracemem(y)
+y[1] <- 0
+tracemem(z)
+tracemem(y)
+```
+- Initially y binds to same memory as z after assignment
+- When y is changed, a new copy is created and y pointed to the new address. z has no change
+
+## Pre-allocate memory
+
+```{r}
+method1 = function(n) {
+  vec = NULL # Or vec = c()
+  for(i in seq_len(n))
+    vec = c(vec, i)
+  vec
+}
+method2 = function(n) {
+  vec = numeric(n)
+  for(i in seq_len(n))
+    vec[i] = i
+  vec
+}
+method3 = function(n) seq_len(n)
+microbenchmark(method1(n), method2(n), method3(n))
+```
+
+## Vectorized Programming
+
+- We should avoid unnecessary assigning by using vectorized programming
+- Minimize function calls will help code run faster
+
+**Excercise**
+
+Urn 1 contains ten blue marbles and eight yellow ones. In urn 2, the mixture is six blue and six yellow. We draw a marble at random from urn 1, transfer it to urn 2, and then draw a marble at random from urn 2. What is the probability that that second marble is blue? 
+
+## ifelse may not be efficient
+
+ifelse is useful but it may be slow
+
+- example missing value imputation
+
+```{r}
+f1 <- function(x) ifelse(is.na(x), 0, x)
+f2 <- function(x) {
+  x[is.na(x)] <- 0
+  x
+}
+x <- sample(c(1, 2, NA), 100000, replace = TRUE)
+microbenchmark(f1(x),
+               f2(x))
+```
+
+## pmin and pmax
+
+pmin and pmax obtains the pairwise min and max between two vectors
+
+- Example: Federal tax rate calculation for Single
+
+see https://www.irs.com/articles/2016-federal-tax-rates-personal-exemptions-and-standard-deductions
+
+```{r}
+breaks <- c(0, 9275, 37650, 91150, 190151, 413350, 415050)
+rate <- c(0.1, 0.15, 0.25, 0.28, 0.33, 0.35, 0.396)
+getFedTax <- function(income) {
+  diffs <- diff(c(breaks, Inf))
+  exposure <- income - breaks
+  exposure <- pmax(pmin(exposure, diffs), 0)
+  sum(exposure * rate)
+}
+getFedTax(80000)
+```
+
+## outer function
+
+**outer** function runs function on each value pairs between vector x and y
+
+- Example: for each value in x, computer 1-10 powers as a matrix
+
+```{r}
+x <- 1:5
+y <- 1:10
+outer(x, y, "^")
+```
+- Example: generate vector of a1-a10, b1-b10,...z1-z10
+```{r}
+f <- function(x, y) paste0(x, y)
+v <- outer(letters, 1:10, "f")
+as.vector(v)
+```
+## expand.grid function
+
+**expand.grid** can be used to enumerate all the possible combinations
+
+- Example: generate all possible friendship pairs between a few names
+
+```{r}
+nms <- c("Tom", "Alice", "Kim", "Brenda")
+expand.grid(nms, nms)
+```
+
+- Example: generate a longitudinal data for a group of ids
+```{r}
+id <- 1:10
+date <- as.Date(sprintf("2016-%s-01", 1:12))
+data <- expand.grid(date = date, id = id)
+```
+
