@@ -155,5 +155,80 @@ system.time(
 
 <!-- ``` -->
 
+## Using MGHPCC
+
+- MGHPCC is computing cluster that UMASS students can use for their research
+- http://wiki.umassrc.org/ for guide
+
+## Connet to MGHPCC
+
+We can use ssh to connect mghpcc, need to get an account first
+
+```
+ssh xg25a@ghpcc06.umassrc.org
+```
+
+You can skip entering password by adding key to remote
+
+http://www.tecmint.com/ssh-passwordless-login-using-ssh-keygen-in-5-easy-steps/
 
 
+## Setup default environment
+edit *.bash_login* file to load modules by default, such as R
+
+```
+nano .bash_login
+```
+
+add `module load R/3.2.2` to the file
+
+Install necessary R packages in R
+
+## Submit Job
+
+Use bsub to submit a job
+
+Example
+
+```
+bsub -q long -W 48:00 -R rusage[mem=2000] ./myjob.sh
+```
+
+myjob.sh file contains the Rscript code to run in shell
+
+myjob.sh
+```
+#!/bin/bash
+Rscript myjob.R
+```
+
+Make sure myjob.sh executable
+```
+chmod 777 myjob.sh
+```
+
+## Write R file
+
+R file
+```
+r <- mean(sapply(1:10000, function(x) 
+    t.test(rnorm(1000, 0.05))$p.value) < 0.05)
+save(r, file = sprintf("result/%s.rda", runif(1)))
+```
+
+Need to create result folder first `mkdir result`
+
+To run the job
+
+```
+bsub -q long -W 48:00 -R rusage[mem=2000] ./myjob.sh
+```
+
+bjobs, bpeeks can be used to check jobs status
+
+## Request a lot of nodes to do the job in parallel
+
+```
+for i in {1..100}; do bsub -q long  ./myjob.sh; done;
+
+```

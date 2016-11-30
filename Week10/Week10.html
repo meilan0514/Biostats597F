@@ -240,7 +240,74 @@ system.time(
 
 <!-- ) -->
 
-<!-- ``` --></article></slide>
+<!-- ``` -->
+
+</article></slide><slide class=''><hgroup><h2>Using MGHPCC</h2></hgroup><article  id="using-mghpcc">
+
+<ul>
+<li>MGHPCC is computing cluster that UMASS students can use for their research</li>
+<li><a href='http://wiki.umassrc.org/' title=''>http://wiki.umassrc.org/</a> for guide</li>
+</ul>
+
+</article></slide><slide class=''><hgroup><h2>Connet to MGHPCC</h2></hgroup><article  id="connet-to-mghpcc">
+
+<p>We can use ssh to connect mghpcc, need to get an account first</p>
+
+<pre >ssh xg25a@ghpcc06.umassrc.org</pre>
+
+<p>You can skip entering password by adding key to remote</p>
+
+<p><a href='http://www.tecmint.com/ssh-passwordless-login-using-ssh-keygen-in-5-easy-steps/' title=''>http://www.tecmint.com/ssh-passwordless-login-using-ssh-keygen-in-5-easy-steps/</a></p>
+
+</article></slide><slide class=''><hgroup><h2>Setup default environment</h2></hgroup><article  id="setup-default-environment">
+
+<p>edit <em>.bash_login</em> file to load modules by default, such as R</p>
+
+<pre >nano .bash_login</pre>
+
+<p>add <code>module load R/3.2.2</code> to the file</p>
+
+<p>Install necessary R packages in R</p>
+
+</article></slide><slide class=''><hgroup><h2>Submit Job</h2></hgroup><article  id="submit-job">
+
+<p>Use bsub to submit a job</p>
+
+<p>Example</p>
+
+<pre >bsub -q long -W 48:00 -R rusage[mem=2000] ./myjob.sh</pre>
+
+<p>myjob.sh file contains the Rscript code to run in shell</p>
+
+<p>myjob.sh</p>
+
+<pre >#!/bin/bash
+Rscript myjob.R</pre>
+
+<p>Make sure myjob.sh executable</p>
+
+<pre >chmod 777 myjob.sh</pre>
+
+</article></slide><slide class=''><hgroup><h2>Write R file</h2></hgroup><article  id="write-r-file">
+
+<p>R file</p>
+
+<pre >r &lt;- mean(sapply(1:10000, function(x) 
+    t.test(rnorm(1000, 0.05))$p.value) &lt; 0.05)
+save(r, file = sprintf(&quot;result/%s.rda&quot;, runif(1)))</pre>
+
+<p>Need to create result folder first <code>mkdir result</code></p>
+
+<p>To run the job</p>
+
+<pre >bsub -q long -W 48:00 -R rusage[mem=2000] ./myjob.sh</pre>
+
+<p>bjobs, bpeeks can be used to check jobs status</p>
+
+</article></slide><slide class=''><hgroup><h2>Request a lot of nodes to do the job in parallel</h2></hgroup><article  id="request-a-lot-of-nodes-to-do-the-job-in-parallel">
+
+<pre >for i in {1..100}; do bsub -q long  ./myjob.sh; done;
+</pre></article></slide>
 
 
   <slide class="backdrop"></slide>
