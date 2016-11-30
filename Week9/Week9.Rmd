@@ -101,6 +101,7 @@ method2 = function(n) {
   vec
 }
 method3 = function(n) seq_len(n)
+n <- 10000
 microbenchmark(method1(n), method2(n), method3(n))
 ```
 
@@ -125,7 +126,7 @@ f2 <- function(x) {
   x[is.na(x)] <- 0
   x
 }
-x <- sample(c(1, 2, NA), 100000, replace = TRUE)
+x <- sample(c(1, 2, NA), 1000000, replace = TRUE)
 microbenchmark(f1(x),
                f2(x))
 ```

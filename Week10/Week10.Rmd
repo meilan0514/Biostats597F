@@ -1,0 +1,159 @@
+---
+title: Biostats 597F
+subtitle: Week 10 - Parallel Computing and Rcpp
+output: ioslides_presentation
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(results="hide", eval=FALSE)
+```
+
+## Parallel Computing
+
+- Most R jobs can be split multiple independent small jobs (repeated simulations)
+- R is single threaded, while most current computers with multiple cores can run multiple threads in parallel
+- Parallel can be parallely running in multiple cores, multiple computer in network, GPUs
+- Works best for indpendent jobs, can be challenge for dependent iterations such as a Bayesian chain
+
+## R Packages
+
+There are many R packages available for parallel computing
+
+In general, installed package **parallel** (combining packages **snow** and **multicore**) can do most of the job. 
+
+For other packages for parallel computing
+
+https://cran.r-project.org/web/views/HighPerformanceComputing.html
+
+
+## Parallel With Multiple Cores
+
+Usining multple cores for paralle computing is simple using **mclapply** function.
+
+- Convert computing task into a task using **lapply**
+- Replace **lapply** with **mclapply** and specify number of cores to use. Use **detectCores()** to see how many cores available in your computer
+
+Example
+```
+f <- function(x) {code for simulation}
+## Version not using lapply
+result <- c()
+for (i in 1:1000) {result <- c(result, c(f(i)))}
+lapply(1:1000, f) # version using lapply
+mclapply(1:1000, f, mc.cores = 8) # mclapply version 
+```
+
+## Example 1: simple simuation
+
+Find the power of t-test of 1000 sample from Normal(0.05, 1)
+
+```{r}
+library(parallel)
+# Function to run a simulation
+f <- function(x) t.test(rnorm(1000, 0.05))$p.value
+
+# Non-parallelized
+system.time(r1 <- unlist(lapply(1:10000, f)))
+mean(r1 < 0.05)
+
+# parallelized
+system.time(r2 <- unlist(mclapply(1:10000, f, mc.cores = 8)))
+mean(r2 < 0.05)
+```
+## Example: simulation on parameters
+
+Power for different sample size and mean
+
+```{r}
+params <- list(c(100, 0.1),
+               c(100, 0.2),
+               c(100, 0.3),
+               c(100, 0.4),
+               c(300, 0.1),
+               c(300, 0.2),
+               c(300, 0.3),
+               c(300, 0.4))
+f <- function(n, mu) {
+  mean(sapply(1:10000, function(x) t.test(rnorm(n, mu))$p.value) < 0.05)
+}
+
+system.time(r1 <- lapply(params, function(x) f(x[1], x[2])))
+system.time(r2 <- mclapply(params, function(x) f(x[1], x[2]), mc.cores = 8))
+```
+## Parallel computing with cluster
+
+- **mclapply** only works for single computer with multiple cores
+- **parallel** also allows computing for multiple computers in network
+- Network communication may have huge impact computation time, it is important to minimize network commnucation
+- More advanced controls of commnucations with nodes are available
+
+Steps
+
+- Create a cluster
+- Convert task into lapply
+- Replace lapply with clusterApply
+
+## Example
+
+This example treats different cores as different cluster nodes just for demostration, but they can be replaced by cluster nodes
+
+```{r}
+f <- function(x) t.test(rnorm(1000, 0.05))$p.value
+
+# make cluster with 8 localhost (core)
+cl <- makeCluster(type = "SOCK", rep("localhost", 8))
+
+# Non-parallelized
+system.time(r1 <- unlist(lapply(1:10000, f)))
+mean(r1 < 0.05)
+
+# Parallel: each node perform 1250 iterations
+system.time(r3 <- clusterApply(cl, 1:10000, f))
+mean(r3 < 0.05)
+
+stopCluster(cl)
+```
+
+## foreach
+
+**foreach** and **doMC** do the parallel computing with syntax similar to for loops. You do not need to convert your task into lapply first.
+
+```{r}
+library(foreach);library(doMC)
+## Non-parallel version
+system.time(
+  r1 <- foreach(1:10000, .combine = c) %do% {
+    t.test(rnorm(1000, 0.05))$p.value
+  })
+## Parallel version
+registerDoMC(8)
+system.time(
+  r2 <- foreach(1:10000, .combine = c) %dopar% {
+    t.test(rnorm(1000, 0.05))$p.value
+  })
+```
+<!-- ## Exercise -->
+
+<!-- How to parallelize computation of **Xbeta** commonly used in calculating likelihood function? -->
+
+<!-- ```{r} -->
+<!-- library(microbenchmark) -->
+<!-- X <- matrix(rnorm(1e8), nrow = 200) -->
+<!-- beta <- rnorm(1e8/200) -->
+
+<!-- # split X -->
+<!-- ids <- split(1:200, rep(1:8, each = 25)) -->
+<!-- X1 <- lapply(ids, function(id) X[id, ]) -->
+<!-- `%**%` <- function(XX, b) { -->
+<!--   mclapply(XX, function(x) x%*%b, mc.cores = 8) -->
+<!-- } -->
+
+<!-- microbenchmark( -->
+<!--   X %*% beta, -->
+<!--   X1 %**% beta -->
+<!-- ) -->
+
+<!-- ``` -->
+
+
+
