@@ -98,17 +98,17 @@ Steps
 This example treats different cores as different cluster nodes just for demostration, but they can be replaced by cluster nodes
 
 ```{r}
-f <- function(x) t.test(rnorm(1000, 0.05))$p.value
+f <- function(x) mean(sapply(1:100, function(x) t.test(rnorm(1000, 0.05))$p.value) < 0.05)
 
 # make cluster with 8 localhost (core)
-cl <- makeCluster(type = "SOCK", rep("localhost", 8))
+cl <- makeCluster(type = "SOCK", rep("localhost", 4))
 
 # Non-parallelized
-system.time(r1 <- unlist(lapply(1:10000, f)))
+system.time(r1 <- unlist(lapply(1:1000, f)))
 mean(r1 < 0.05)
 
 # Parallel: each node perform 1250 iterations
-system.time(r3 <- clusterApply(cl, 1:10000, f))
+system.time(r3 <- clusterApply(cl, 1:1000, f))
 mean(r3 < 0.05)
 
 stopCluster(cl)
@@ -122,14 +122,14 @@ stopCluster(cl)
 library(foreach);library(doMC)
 ## Non-parallel version
 system.time(
-  r1 <- foreach(1:10000, .combine = c) %do% {
-    t.test(rnorm(1000, 0.05))$p.value
+  r1 <- foreach(1:1000, .combine = c) %do% {
+   mean(sapply(1:100, function(x) t.test(rnorm(1000, 0.05))$p.value) < 0.05)
   })
 ## Parallel version
 registerDoMC(8)
 system.time(
-  r2 <- foreach(1:10000, .combine = c) %dopar% {
-    t.test(rnorm(1000, 0.05))$p.value
+  r2 <- foreach(1:1000, .combine = c) %dopar% {
+    mean(sapply(1:100, function(x) t.test(rnorm(1000, 0.05))$p.value) < 0.05)
   })
 ```
 <!-- ## Exercise -->

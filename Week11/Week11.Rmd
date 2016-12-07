@@ -1,0 +1,204 @@
+---
+title: Biostats 597F
+subtitle: Week 11 - Introduction to Rcpp
+output: ioslides_presentation
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(results="hide", eval=FALSE)
+```
+
+## Rcpp
+
+- Rcpp provides clean and approachable API to write high performance C++ code used by R
+- Makes it easy to connect C++ and R, which used to be very painful
+- You can use Rcpp with only little knowledge of C/C++
+
+It is useful when
+
+- Loops can not be easily vectorized
+- Functions that will be called millions of times, a slight improvement by rewriting in C++ can be very beneficial
+- Problems that need complex data structures
+
+## Installation
+
+- Windows: Install Rtools
+- Mac OSX: Install XCode for gcc
+
+- Install Rcpp package
+
+## Simple Example
+
+We can create a sample Cpp file for Rcpp using Rstudio
+
+- File >> New File >> C++ file
+- Save the sample file
+- Examine the basic component of Cpp file
+- Use the function
+
+```{r}
+library(Rcpp)
+sourceCpp("example1.cpp")
+
+timesTwo(123)
+```
+
+## Simple Example
+
+- Need to specify data type for each variable and output
+- There is a corresponding variable type in Rcpp for each R variable type, e.g. NumericVector is corresponding to a numeric vector. NumeriMatrix for numeric matrix
+- Need to put ```// [[Rcpp::export]]``` before the function inorder to use it in R
+
+## Example using Vector
+
+- When use for loop, index starts from 0 in C
+- We can use x.size() to know the length of the vector
+- Must use `=` for assignment
+
+Function to calculate mean of a vector
+
+```{r}
+library(microbenchmark)
+sourceCpp("examples.cpp")
+
+microbenchmark(mean(rnorm(100000)),
+               meanC(rnorm(100000)))
+```
+## Example Using Vector
+
+Cumulative sum of positive values in the vector
+
+```{r}
+sourceCpp("examples.cpp")
+# R version
+csum <- function(x) {
+  sum(x[x > 0])
+} 
+
+microbenchmark(
+  csum(rnorm(100000)),
+  csumC(rnorm(100000))
+)
+
+```
+## Vector Example
+
+Rcpp can operate or R object inplace, e.g. replace elements of x without recreating a new vector.
+
+Replace negative values in x to be 0
+
+```{r}
+sourceCpp("examples.cpp")
+# R version
+fill0 <- function(x) {
+  x[x < 0] <- 0
+  x
+} 
+
+x <- fill0(c(1, 2, -3))
+fill0(x)
+fill0C(x) ## nothing return, but x is changed
+
+```
+## Matrix
+
+- Mostly used are NumericMatrix and IntegerMatrix
+- Use X(i, j) to extract matrix elements
+- Use X.nrow() and X.ncol() to get the dimension of the matrix
+
+Example: row sum of a matrix
+
+```{r}
+sourceCpp("examples.cpp")
+
+m <- matrix(sample(1:10, 100, replace = TRUE), nrow = 10)
+
+rowSums(m)  # R version
+rowSumC(m)
+```
+## Other Data Types
+
+- Many other data types are available in Rcpp such as list, data frame, function etc
+- However vector and matrix are most often used 
+- For more details we can refer to 
+
+http://adv-r.had.co.nz/Rcpp.html and the book **Seamless R and C++ Integration with Rcpp**
+
+
+## Example - Model Prediction
+
+A score to predict someone to receive vaccine or not is computed based on three variables: age, gender (female or not), ily (whether was infected by virus in last year or not) 
+
+The probability is computed by
+
+```{r}
+vacc1a <- function(age, female, ily) {
+  p <- 0.25 + 0.3 * 1 / (1 - exp(0.04 * age)) + 0.1 * ily
+  p <- p * if (female) 1.25 else 0.75
+  p <- max(0, p)
+  p <- min(1, p)
+  p
+}
+```
+
+However this does not take vector as input
+
+## Example - Model Prediction
+
+Vectorized input version
+
+```{r}
+vacc1 <- function(age, female, ily) {
+  n <- length(age)
+  out <- numeric(n)
+  for (i in seq_len(n)) {
+    out[i] <- vacc1a(age[i], female[i], ily[i])
+  }
+  out
+}
+```
+
+## Example - Model Prediction
+
+Improved R vectorized version
+
+```{r}
+vacc2 <- function(age, female, ily) {
+  p <- 0.25 + 0.3 * 1 / (1 - exp(0.04 * age)) + 0.1 * ily
+  p <- p * ifelse(female, 1.25, 0.75)
+  p <- pmax(0, p)
+  p <- pmin(1, p)
+  p
+}
+```
+
+## Example - Model Prediction
+
+Rcpp version (see examples.R)
+
+Comparison
+
+```{r}
+sourceCpp("examples.cpp")
+n <- 1000
+age <- rnorm(n, mean = 50, sd = 10)
+female <- sample(c(T, F), n, rep = TRUE)
+ily <- sample(c(T, F), n, prob = c(0.8, 0.2), rep = TRUE)
+
+stopifnot(
+  all.equal(vacc1(age, female, ily), vacc2(age, female, ily)),
+  all.equal(vacc1(age, female, ily), vacc3(age, female, ily))
+)
+
+microbenchmark(
+  vacc1 = vacc1(age, female, ily),
+  vacc2 = vacc2(age, female, ily),
+  vacc3 = vacc3(age, female, ily)
+)
+
+```
+
+
+
+
+
